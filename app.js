@@ -1,4 +1,3 @@
-
 const $ = id => document.getElementById(id);
 const conversation = $("conversation");
 const dialog = $("settings");
@@ -7,14 +6,14 @@ let listening = false;
 let previousInteractionId = null;
 let activeModel = null;
 
+const DEFAULT_MODEL = "gemini-3.6-flash";
+
 const saved = JSON.parse(localStorage.getItem("jarvisSettings") || "{}");
 
 $("nameField").value = saved.name || "";
 $("titleField").value = saved.title || "sir";
 $("keyField").value = saved.key || "";
-$("modelField").value = saved.model === "gemini-2.5-flash"
-  ? "gemini-3.8-flash"
-  : (saved.model || "gemini-3.8-flash");
+$("modelField").value = saved.model || DEFAULT_MODEL;
 $("speakField").checked = saved.speak !== false;
 $("userTitle").textContent = saved.title || "sir";
 
@@ -31,7 +30,7 @@ $("saveSettings").onclick = e => {
     name: $("nameField").value.trim(),
     title: $("titleField").value.trim() || "sir",
     key: $("keyField").value.trim(),
-    model: $("modelField").value.trim() || "gemini-3.8-flash",
+    model: $("modelField").value.trim() || DEFAULT_MODEL,
     speak: $("speakField").checked
   };
 
@@ -62,8 +61,7 @@ function addMessage(role, text) {
 function setStatus(status, hint) {
   $("status").textContent = status;
   $("hint").textContent = hint;
-}
-
+}// JARVIS VOICE
 function say(text) {
   const s = settings();
 
@@ -72,17 +70,29 @@ function say(text) {
   speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.94;
-  utterance.pitch = 0.88;
+  utterance.rate = 0.92;
+  utterance.pitch = 0.72;
+  utterance.volume = 1;
 
   const voices = speechSynthesis.getVoices();
-  const british = voices.find(v => /en-GB/i.test(v.lang));
 
-  if (british) utterance.voice = british;
+  const maleVoice = voices.find(v =>
+    /^en/i.test(v.lang) &&
+    /male|david|daniel|james|george|mark|guy|ryan|aaron|fred/i.test(v.name)
+  );
+
+  const englishVoice = voices.find(v => /^en/i.test(v.lang));
+
+  if (maleVoice) {
+    utterance.voice = maleVoice;
+  } else if (englishVoice) {
+    utterance.voice = englishVoice;
+  }
 
   speechSynthesis.speak(utterance);
 }
 
+// GEMINI CONNECTION
 async function ask(text) {
   const s = settings();
 
@@ -91,7 +101,7 @@ async function ask(text) {
     return;
   }
 
-  const model = s.model || "gemini-3.8-flash";
+  const model = s.model || DEFAULT_MODEL;
 
   if (activeModel && activeModel !== model) {
     previousInteractionId = null;
@@ -106,7 +116,7 @@ async function ask(text) {
   const timeout = setTimeout(() => controller.abort(), 35000);
 
   try {
-    const system = `You are J.A.R.V.I.S., a polished, helpful personal AI assistant inspired by a fictional high-tech butler. Address the user as ${s.title || "sir"}. Their name is ${s.name || "not specified"}. Be warm, composed, concise, intelligent, and honest. You are running on an Android phone and must never claim to perform actions you cannot actually perform.`;
+    const system = `You are J.A.R.V.I.S., a polished, intelligent personal AI assistant. Address the user as ${s.title || "sir"}. Their name is ${s.name || "not specified"}. Be warm, composed, concise, helpful, and honest. You run on an Android phone and must never claim to perform actions you cannot actually perform.`;
 
     const body = {
       model: model,
@@ -174,7 +184,7 @@ async function ask(text) {
     setStatus("SYSTEM READY", "Tap the reactor and speak, or type a message.");
 
   } catch (err) {
-    let message = err.name === "AbortError"
+    const message = err.name === "AbortError"
       ? "Gemini took too long to respond. Please try again."
       : err.message;
 
@@ -184,8 +194,7 @@ async function ask(text) {
   } finally {
     clearTimeout(timeout);
   }
-}
-
+}// TEXT CHAT
 $("chatForm").addEventListener("submit", e => {
   e.preventDefault();
 
@@ -198,28 +207,40 @@ $("chatForm").addEventListener("submit", e => {
   ask(text);
 });
 
+// VOICE RECOGNITION
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 
 if (SpeechRecognition) {
   const rec = new SpeechRecognition();
 
-  rec.lang = "en-PH";
+  rec.lang = "en-US";
   rec.interimResults = false;
   rec.maxAlternatives = 1;
+  rec.continuous = false;
 
   rec.onstart = () => {
     listening = true;
     document.body.classList.add("listening");
-    setStatus("LISTENING", "I'm listening, " + (settings().title || "sir") + ".");
+
+    setStatus(
+      "LISTENING",
+      "I'm listening, " + (settings().title || "sir") + "."
+    );
   };
 
   rec.onresult = e => {
     const spokenText = e.results[0][0].transcript;
-    ask(spokenText);
+
+    if (spokenText.trim()) {
+      ask(spokenText);
+    }
   };
 
   rec.onerror = e => {
+    listening = false;
+    document.body.classList.remove("listening");
+
     setStatus(
       "MICROPHONE ISSUE",
       e.error === "not-allowed"
@@ -233,7 +254,10 @@ if (SpeechRecognition) {
     document.body.classList.remove("listening");
 
     if ($("status").textContent === "LISTENING") {
-      setStatus("SYSTEM READY", "Tap the reactor and speak, or type a message.");
+      setStatus(
+        "SYSTEM READY",
+        "Tap the reactor and speak, or type a message."
+      );
     }
   };
 
@@ -243,7 +267,7 @@ if (SpeechRecognition) {
     } else {
       try {
         rec.start();
-      } catch (e) {
+      } catch (err) {
         setStatus("MICROPHONE ISSUE", "Please try again.");
       }
     }
@@ -251,10 +275,21 @@ if (SpeechRecognition) {
 
 } else {
   $("micBtn").onclick = () => {
-    setStatus("VOICE INPUT UNAVAILABLE", "Try opening this app in Chrome on Android.");
+    setStatus(
+      "VOICE INPUT UNAVAILABLE",
+      "Try opening this app in Chrome on Android."
+    );
   };
-}
-
+}// SERVICE WORKER
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
+
+// LOAD AVAILABLE VOICES
+if ("speechSynthesis" in window) {
+  speechSynthesis.onvoiceschanged = () => {
+    speechSynthesis.getVoices();
+  };
+
+  speechSynthesis.getVoices();
 }

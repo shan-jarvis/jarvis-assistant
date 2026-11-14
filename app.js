@@ -125,7 +125,7 @@ async function ask(text) {
       generation_config: {
         temperature: 0.7,
         max_output_tokens: 700,
-        thinking_level: "low"
+        thinking_level: "minimal"
       }
     };
 

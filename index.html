@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050b16">
+  <meta name="description" content="Your personal JARVIS-style voice assistant">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <title>J.A.R.V.I.S.</title>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand"><span class="dot"></span><div><b>J.A.R.V.I.S.</b><small>PERSONAL AI SYSTEM</small></div></div>
+      <button id="settingsBtn" class="icon-btn" aria-label="Settings">⚙</button>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow" id="status">SYSTEM STANDBY</div>
+      <div class="reactor-wrap">
+        <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
+        <button id="micBtn" class="reactor" aria-label="Start voice input">
+          <span class="core"></span><span class="mic">🎙</span>
+        </button>
+      </div>
+      <h1>At your service, <span id="userTitle">sir</span>.</h1>
+      <p class="hint" id="hint">Tap the reactor and speak to begin.</p>
+    </section>
+
+    <section class="conversation" id="conversation" aria-live="polite">
+      <div class="message assistant"><span class="speaker">JARVIS</span><p>Good evening. Systems are ready. How may I assist you?</p></div>
+    </section>
+
+    <form id="chatForm" class="composer">
+      <input id="messageInput" autocomplete="off" placeholder="Talk to me, or type a message…" aria-label="Message">
+      <button type="submit" aria-label="Send">➤</button>
+    </form>
+    <footer>GEMINI-POWERED · PERSONAL PROTOTYPE</footer>
+  </main>
+
+  <dialog id="settings">
+    <form method="dialog" class="settings-card" id="settingsForm">
+      <div class="dialog-head"><h2>System settings</h2><button class="icon-btn" value="cancel">✕</button></div>
+      <label>Your name <input id="nameField" placeholder="Shan"></label>
+      <label>How Jarvis addresses you <input id="titleField" placeholder="sir"></label>
+      <label>Gemini API key <input id="keyField" type="password" autocomplete="off" placeholder="Paste your key here"></label>
+      <label>Gemini model <input id="modelField" value="gemini-2.5-flash"></label>
+      <label class="check"><input id="speakField" type="checkbox" checked> Speak responses aloud</label>
+      <p class="warning">Personal prototype only: the API key is saved in this browser's local storage. Do not share this app or your key. Never enable paid billing if you need to keep this at ₱0.</p>
+      <button id="saveSettings" class="save" value="default">Save settings</button>
+    </form>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+</html>
